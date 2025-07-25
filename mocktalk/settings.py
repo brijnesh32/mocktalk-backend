@@ -54,6 +54,11 @@ INSTALLED_APPS = [
 
 # === WSGI ===
 WSGI_APPLICATION = 'mocktalk.wsgi.application'
+# === URL CONFIGURATION ===
+ROOT_URLCONF = 'mocktalk.urls'  # 👈 Add this line
+# Disable collectstatic during Render build if needed
+if 'RENDER' in os.environ:
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # === TEMPLATES ===
 TEMPLATES = [
