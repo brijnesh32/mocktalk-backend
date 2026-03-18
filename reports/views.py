@@ -38,7 +38,7 @@ Return ONLY a valid JSON list of strings. Do not add any explanation, introducti
 """
 
             response = groq_client.chat.completions.create(
-                model="llama3-70b-8192",
+                model="llama-3.3-70b-versatile",  # ✅ updated model
                 messages=[{"role": "user", "content": prompt}]
             )
 
@@ -71,8 +71,6 @@ Return ONLY a valid JSON list of strings. Do not add any explanation, introducti
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Invalid method"}, status=405)
-
-
 import re
 
 @csrf_exempt
@@ -95,7 +93,7 @@ def submit_answers(request):
             prompt += "\nRespond only with raw JSON. No explanation. No markdown like ```json."
 
             response = groq_client.chat.completions.create(
-                model="llama3-70b-8192",
+                model="llama-3.3-70b-versatile",  # ✅ updated model
                 messages=[{"role": "user", "content": prompt}]
             )
 
@@ -124,6 +122,7 @@ def submit_answers(request):
 
     return JsonResponse({"error": "Invalid method"}, status=405)
 
+
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import json
@@ -139,24 +138,22 @@ def save_report(request):
             email = data.get('email')
             role = data.get('role')
             score = data.get('score')
-            strengths = data.get('strengths', '')
-            improvements = data.get('improvements', '')
-            created_at = data.get('created_at')
+            summary = data.get('summary', '')
 
-            # ✅ Check if a report with the same details already exists
-            duplicate = Report.objects(
-                name=name,
-                email=email,
-                role=role,
-                score=score,
-                strengths=strengths,
-                improvements=improvements
-            ).first()
+            strengths = data.get('strengths') or []
+            improvements = data.get('improvements') or []
 
-            if duplicate:
-                return JsonResponse({'message': 'Report already exists'}, status=400)
+            # ✅ FORCE LIST FORMAT
+            if not isinstance(strengths, list):
+                strengths = [strengths]
 
-            # ✅ Save new report if not duplicate
+            if not isinstance(improvements, list):
+                improvements = [improvements]
+
+            # ✅ VALIDATION
+            if not name or not email:
+                return JsonResponse({'error': 'Missing fields'}, status=400)
+
             report = Report(
                 name=name,
                 email=email,
@@ -164,12 +161,14 @@ def save_report(request):
                 score=score,
                 strengths=strengths,
                 improvements=improvements,
-                created_at=created_at
+                summary=summary
             )
             report.save()
-            return JsonResponse({'message': 'Report saved successfully'}, status=201)
+
+            return JsonResponse({'message': 'Saved'}, status=201)
 
         except Exception as e:
+            print("❌ SAVE ERROR:", str(e))
             return JsonResponse({'error': str(e)}, status=500)
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
